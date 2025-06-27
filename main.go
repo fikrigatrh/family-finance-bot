@@ -56,9 +56,6 @@ func main() {
 	}
 	defer db.Close()
 
-	// Enable foreign keys
-	db.Exec("PRAGMA foreign_keys = ON;")
-
 	// Check if database file exists
 	if _, err := os.Stat(financeDBPath); os.IsNotExist(err) {
 		// Create new database
@@ -76,7 +73,6 @@ func main() {
 	if err != nil {
 		return
 	}
-	whatsappDB.Exec("PRAGMA foreign_keys = ON;")
 	// Initialize WhatsApp client
 	initWhatsAppClient(whatsappDB)
 
@@ -115,13 +111,8 @@ func initDatabaseNew(path string, dbType string) (*sql.DB, error) {
 		return nil, fmt.Errorf("failed to open database: %w", err)
 	}
 
-	// Run migrations if it's the finance database
-	if dbType == "finance" {
-		if err := migrateDatabase(db, "app"); err != nil {
-			db.Close()
-			return nil, fmt.Errorf("database migration failed: %w", err)
-		}
-	}
+	// Enable foreign keys
+	db.Exec("PRAGMA foreign_keys = ON;")
 
 	// Run migrations if it's the finance database
 	if dbType == "finance" {

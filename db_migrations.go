@@ -6,16 +6,18 @@ import (
 	"log"
 )
 
+// Update Migration struct
 type Migration struct {
 	Version int
-	Up      func(*sql.DB) error
+	Up      func(*sql.Tx) error // Now takes transaction
 }
 
+// Update your migrations
 var migrations = []Migration{
 	{
 		Version: 1,
-		Up: func(db *sql.DB) error {
-			_, err := db.Exec(`CREATE TABLE IF NOT EXISTS transactions (
+		Up: func(tx *sql.Tx) error {
+			_, err := tx.Exec(`CREATE TABLE IF NOT EXISTS transactions (
 				id INTEGER PRIMARY KEY AUTOINCREMENT,
 				type TEXT NOT NULL CHECK(type IN ('income', 'expense')),
 				description TEXT NOT NULL,
@@ -25,14 +27,6 @@ var migrations = []Migration{
 			return err
 		},
 	},
-	// Add future migrations here:
-	// {
-	//     Version: 2,
-	//     Up: func(db *sql.DB) error {
-	//         _, err := db.Exec(`ALTER TABLE transactions ADD COLUMN category TEXT`)
-	//         return err
-	//     },
-	// },
 }
 
 func migrateDatabase(db *sql.DB, dbName string) error {
@@ -49,26 +43,40 @@ func migrateDatabase(db *sql.DB, dbName string) error {
 		return fmt.Errorf("failed to create migrations table: %w", err)
 	}
 
-	// Get current version
-	var currentVersion int
-	err := db.QueryRow("SELECT MAX(version) FROM schema_migrations").Scan(&currentVersion)
-	if err == sql.ErrNoRows {
-		currentVersion = 0
-	} else if err != nil {
+	// Get current version - handle NULL
+	var version int
+	err := db.QueryRow(`
+		SELECT COALESCE(MAX(version), 0) 
+		FROM schema_migrations
+	`).Scan(&version)
+	if err != nil && err != sql.ErrNoRows {
 		return fmt.Errorf("failed to get current migration version: %w", err)
 	}
 
 	// Apply pending migrations
 	for _, migration := range migrations {
-		if migration.Version > currentVersion {
+		if migration.Version > version {
 			log.Printf("Applying migration %d for %s", migration.Version, dbName)
-			if err := migration.Up(db); err != nil {
+
+			tx, err := db.Begin()
+			if err != nil {
+				return fmt.Errorf("failed to begin transaction: %w", err)
+			}
+
+			if err := migration.Up(tx); err != nil {
+				tx.Rollback()
 				return fmt.Errorf("migration %d failed: %w", migration.Version, err)
 			}
 
-			if _, err := db.Exec("INSERT INTO schema_migrations (version) VALUES (?)", migration.Version); err != nil {
+			if _, err := tx.Exec("INSERT INTO schema_migrations (version) VALUES (?)", migration.Version); err != nil {
+				tx.Rollback()
 				return fmt.Errorf("failed to record migration %d: %w", migration.Version, err)
 			}
+
+			if err := tx.Commit(); err != nil {
+				return fmt.Errorf("failed to commit migration %d: %w", migration.Version, err)
+			}
+
 			log.Printf("Successfully applied migration %d", migration.Version)
 		}
 	}
