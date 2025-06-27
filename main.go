@@ -162,12 +162,33 @@ func initWhatsAppClient(waDb *sql.DB) {
 			}
 		}
 	} else {
-		// Already logged in
-		err := client.Connect()
-		if err != nil {
-			log.Fatal(err)
+		client.Store.ID = nil
+		if client.Store.ID == nil {
+			// First login - show QR code
+			qrChan, _ := client.GetQRChannel(context.Background())
+			err := client.Connect()
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			for evt := range qrChan {
+				switch evt.Event {
+				case "code":
+					fmt.Println("Scan QR code:", evt.Code)
+				case "success":
+					fmt.Println("Logged in successfully!")
+				case "timeout":
+					log.Fatal("QR scan timed out. Please restart the app.")
+				}
+			}
+		} else {
+			// Already logged in
+			err := client.Connect()
+			if err != nil {
+				log.Fatal(err)
+			}
+			fmt.Println("Connected to WhatsApp")
 		}
-		fmt.Println("Connected to WhatsApp")
 	}
 }
 
