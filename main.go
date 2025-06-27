@@ -9,6 +9,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -34,7 +35,7 @@ var (
 )
 
 const (
-	financeDBPath  = "data/finance.db"
+	financeDBPath  = "data/app.db"
 	whatsappDBPath = "data/whatsapp.db"
 )
 
@@ -48,10 +49,10 @@ func main() {
 	}
 	fmt.Println("Current working directory:", dir)
 
-	// Initialize finance database
-	db, err = sql.Open("sqlite3", financeDBPath)
+	// Initialize databases
+	db, err := initDatabaseNew(financeDBPath, "finance")
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Finance DB init failed: %v", err)
 	}
 	defer db.Close()
 
@@ -71,7 +72,10 @@ func main() {
 		initDatabase(db)
 	}
 
-	whatsappDB, _ := sql.Open("sqlite3", whatsappDBPath)
+	whatsappDB, err := initDatabaseNew(whatsappDBPath, "whatsapp")
+	if err != nil {
+		return
+	}
 	whatsappDB.Exec("PRAGMA foreign_keys = ON;")
 	// Initialize WhatsApp client
 	initWhatsAppClient(whatsappDB)
@@ -97,6 +101,44 @@ func initDatabase(db *sql.DB) {
 	if err != nil {
 		log.Fatal("Failed to create transactions table:", err)
 	}
+}
+
+func initDatabaseNew(path string, dbType string) (*sql.DB, error) {
+	// Create directory if needed
+	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+		return nil, fmt.Errorf("failed to create data directory: %w", err)
+	}
+
+	// Open database connection
+	db, err := sql.Open("sqlite3", path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open database: %w", err)
+	}
+
+	// Run migrations if it's the finance database
+	if dbType == "finance" {
+		if err := migrateDatabase(db, "app"); err != nil {
+			db.Close()
+			return nil, fmt.Errorf("database migration failed: %w", err)
+		}
+	}
+
+	// Run migrations if it's the finance database
+	if dbType == "finance" {
+		if err := migrateDatabase(db, "app"); err != nil {
+			db.Close()
+			return nil, fmt.Errorf("database migration failed: %w", err)
+		}
+	}
+
+	if dbType == "whatsapp" {
+		if err := migrateDatabase(db, "whatsapp"); err != nil {
+			db.Close()
+			return nil, fmt.Errorf("database migration failed: %w", err)
+		}
+	}
+
+	return db, nil
 }
 
 func initWhatsAppClient(waDb *sql.DB) {
