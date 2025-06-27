@@ -6,9 +6,7 @@ import (
 	"financial-bot/models"
 	"fmt"
 	"github.com/aarondl/null/v8"
-	"github.com/gin-gonic/gin"
 	"log"
-	"net/http"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -42,8 +40,6 @@ const (
 )
 
 func main() {
-
-	r := gin.Default()
 
 	var err error
 
@@ -87,13 +83,6 @@ func main() {
 	<-c
 
 	client.Disconnect()
-
-	// Get all books
-	r.GET("/health", func(c *gin.Context) {
-		c.JSON(http.StatusOK, "OK")
-	})
-
-	r.Run(":8080") // Listen on port 8080
 }
 
 func initDatabase(db *sql.DB) {
@@ -174,33 +163,12 @@ func initWhatsAppClient(waDb *sql.DB) {
 			}
 		}
 	} else {
-		client.Store.ID = nil
-		if client.Store.ID == nil {
-			// First login - show QR code
-			qrChan, _ := client.GetQRChannel(context.Background())
-			err := client.Connect()
-			if err != nil {
-				log.Fatal(err)
-			}
-
-			for evt := range qrChan {
-				switch evt.Event {
-				case "code":
-					fmt.Println("Scan QR code:", evt.Code)
-				case "success":
-					fmt.Println("Logged in successfully!")
-				case "timeout":
-					log.Fatal("QR scan timed out. Please restart the app.")
-				}
-			}
-		} else {
-			// Already logged in
-			err := client.Connect()
-			if err != nil {
-				log.Fatal(err)
-			}
-			fmt.Println("Connected to WhatsApp")
+		// Already logged in
+		err := client.Connect()
+		if err != nil {
+			log.Fatal(err)
 		}
+		fmt.Println("Connected to WhatsApp")
 	}
 }
 
