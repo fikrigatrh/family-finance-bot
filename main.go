@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"database/sql"
+	"financial-bot/models"
 	"fmt"
 	"github.com/aarondl/null/v8"
 	"log"
@@ -12,7 +13,6 @@ import (
 	"strconv"
 	"strings"
 	"syscall"
-	"the_space/financial_family/models"
 	"time"
 
 	"github.com/aarondl/sqlboiler/v4/boil"
