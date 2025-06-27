@@ -34,8 +34,8 @@ var (
 )
 
 const (
-	financeDBPath  = "/app/data/finance.db"
-	whatsappDBPath = "/app/data/whatsapp.db"
+	financeDBPath  = "data/finance.db"
+	whatsappDBPath = "data/whatsapp.db"
 )
 
 func main() {
