@@ -55,6 +55,9 @@ func main() {
 	}
 	defer db.Close()
 
+	// Enable foreign keys
+	db.Exec("PRAGMA foreign_keys = ON;")
+
 	// Check if database file exists
 	if _, err := os.Stat(financeDBPath); os.IsNotExist(err) {
 		// Create new database
@@ -68,8 +71,10 @@ func main() {
 		initDatabase(db)
 	}
 
+	whatsappDB, _ := sql.Open("sqlite3", whatsappDBPath)
+	whatsappDB.Exec("PRAGMA foreign_keys = ON;")
 	// Initialize WhatsApp client
-	initWhatsAppClient()
+	initWhatsAppClient(whatsappDB)
 
 	// Listen to Ctrl-C
 	c := make(chan os.Signal, 1)
@@ -94,20 +99,13 @@ func initDatabase(db *sql.DB) {
 	}
 }
 
-func initWhatsAppClient() {
+func initWhatsAppClient(waDb *sql.DB) {
 	ctx := context.Background()
 	// WhatsApp database setup
-	container, err := sqlstore.New(ctx, "sqlite3", whatsappDBPath, nil)
-	if err != nil {
-		log.Fatal(err)
-	}
+	container := sqlstore.NewWithDB(waDb, "sqlite3", nil)
 
 	// If you want multiple devices, use container.GetFirstDevice() instead
-	deviceStore, err := container.GetFirstDevice(ctx)
-	if err != nil {
-		log.Fatal(err)
-	}
-
+	deviceStore, _ := container.GetFirstDevice(ctx)
 	client = whatsmeow.NewClient(deviceStore, nil)
 	client.AddEventHandler(eventHandler)
 
@@ -115,7 +113,7 @@ func initWhatsAppClient() {
 	if client.Store.ID == nil {
 		// First login - show QR code
 		qrChan, _ := client.GetQRChannel(context.Background())
-		err = client.Connect()
+		err := client.Connect()
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -132,7 +130,7 @@ func initWhatsAppClient() {
 		}
 	} else {
 		// Already logged in
-		err = client.Connect()
+		err := client.Connect()
 		if err != nil {
 			log.Fatal(err)
 		}
