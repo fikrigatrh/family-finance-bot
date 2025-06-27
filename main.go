@@ -47,17 +47,17 @@ func main() {
 	}
 	defer db.Close()
 
-	// Create transactions table
-	_, err = db.Exec(`
-	CREATE TABLE IF NOT EXISTS transactions (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		type TEXT NOT NULL CHECK(type IN ('income', 'expense')),
-		description TEXT NOT NULL,
-		amount INTEGER NOT NULL,
-		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-	)`)
-	if err != nil {
-		log.Fatal("Failed to create transactions table:", err)
+	// Check if database file exists
+	if _, err := os.Stat(financeDBPath); os.IsNotExist(err) {
+		// Create new database
+		file, err := os.Create(financeDBPath)
+		if err != nil {
+			log.Fatal("Failed to create database:", err)
+		}
+		file.Close()
+
+		// Initialize schema
+		initDatabase(db)
 	}
 
 	// Initialize WhatsApp client
@@ -69,6 +69,21 @@ func main() {
 	<-c
 
 	client.Disconnect()
+}
+
+func initDatabase(db *sql.DB) {
+	// Create transactions table
+	_, err := db.Exec(`
+	CREATE TABLE IF NOT EXISTS transactions (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		type TEXT NOT NULL CHECK(type IN ('income', 'expense')),
+		description TEXT NOT NULL,
+		amount INTEGER NOT NULL,
+		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+	)`)
+	if err != nil {
+		log.Fatal("Failed to create transactions table:", err)
+	}
 }
 
 func initWhatsAppClient() {
