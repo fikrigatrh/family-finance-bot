@@ -6,7 +6,9 @@ import (
 	"financial-bot/models"
 	"fmt"
 	"github.com/aarondl/null/v8"
+	"github.com/gin-gonic/gin"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -40,6 +42,9 @@ const (
 )
 
 func main() {
+
+	r := gin.Default()
+
 	var err error
 
 	dir, err := os.Getwd()
@@ -82,6 +87,13 @@ func main() {
 	<-c
 
 	client.Disconnect()
+
+	// Get all books
+	r.GET("/health", func(c *gin.Context) {
+		c.JSON(http.StatusOK, "OK")
+	})
+
+	r.Run(":8080") // Listen on port 8080
 }
 
 func initDatabase(db *sql.DB) {
