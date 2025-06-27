@@ -33,10 +33,15 @@ var (
 	currentTime = time.Now
 )
 
+const (
+	financeDBPath  = "/app/data/finance.db"
+	whatsappDBPath = "/app/data/whatsapp.db"
+)
+
 func main() {
 	// Initialize finance database
 	var err error
-	db, err = sql.Open("sqlite3", "file:data/app.db?_foreign_keys=on")
+	db, err = sql.Open("sqlite3", financeDBPath)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -69,7 +74,7 @@ func main() {
 func initWhatsAppClient() {
 	ctx := context.Background()
 	// WhatsApp database setup
-	container, err := sqlstore.New(ctx, "sqlite3", "file:whatsapp.db?_foreign_keys=on", nil)
+	container, err := sqlstore.New(ctx, "sqlite3", whatsappDBPath, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
