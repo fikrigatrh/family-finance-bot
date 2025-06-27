@@ -1,0 +1,9 @@
+app = "family-finance-bot"
+primary_region = "sin"
+
+[build]
+dockerfile = "Dockerfile"
+
+[mounts]
+source = "finance_data"
+destination = "/root/finance_data"

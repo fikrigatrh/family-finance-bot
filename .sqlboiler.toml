@@ -1,0 +1,9 @@
+[sqlite3]
+dbname = "data/app.db"
+output = "models"
+pkgname = "models"
+no_tests = true
+
+[sqlite3.driver]
+whitelist = ["transactions"]
+blacklist = ["sqlite_sequence"]
