@@ -215,10 +215,31 @@ func handleMessage(msg *events.Message) {
 }
 
 func isAuthorizedUser(sender string) bool {
+	me, exists := os.LookupEnv("ME")
+	if !exists {
+		fmt.Println("GITHUB_TOKEN environment variable not found")
+		return false
+	}
+
+	if me == "" {
+		fmt.Println("GITHUB_TOKEN is empty")
+		return false
+	}
+
+	you, exists := os.LookupEnv("YOU")
+	if !exists {
+		fmt.Println("GITHUB_TOKEN environment variable not found")
+		return false
+	}
+
+	if you == "" {
+		fmt.Println("GITHUB_TOKEN is empty")
+		return false
+	}
 	// Replace with your and your wife's phone numbers
 	authorizedNumbers := []string{
-		"6281337860558@s.whatsapp.net", // Your number
-		"6285156184457@s.whatsapp.net", // Wife's number
+		me,  // Your number
+		you, // Wife's number
 	}
 	for _, num := range authorizedNumbers {
 		if sender == num {
