@@ -70,12 +70,8 @@ func main() {
 		initDatabase(db)
 	}
 
-	whatsappDB, err := initDatabaseNew(whatsappDBPath, "whatsapp")
-	if err != nil {
-		return
-	}
 	// Initialize WhatsApp client
-	initWhatsAppClient(whatsappDB)
+	initWhatsAppClient()
 
 	// Listen to Ctrl-C
 	c := make(chan os.Signal, 1)
@@ -133,11 +129,15 @@ func initDatabaseNew(path string, dbType string) (*sql.DB, error) {
 	return db, nil
 }
 
-func initWhatsAppClient(waDb *sql.DB) {
+func initWhatsAppClient() {
 	ctx := context.Background()
 	// WhatsApp database setup
-	container := sqlstore.NewWithDB(waDb, "sqlite3", nil)
-
+	//container := sqlstore.NewWithDB(waDb, "sqlite3", nil)
+	container, err := sqlstore.New(ctx, "sqlite3", "whatsapp.db?_foreign_keys=on", nil)
+	if err != nil {
+		log.Println("Failed to connect to database:", err)
+		return
+	}
 	// If you want multiple devices, use container.GetFirstDevice() instead
 	deviceStore, _ := container.GetFirstDevice(ctx)
 	client = whatsmeow.NewClient(deviceStore, nil)
