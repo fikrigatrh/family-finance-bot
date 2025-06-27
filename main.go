@@ -39,8 +39,16 @@ const (
 )
 
 func main() {
-	// Initialize finance database
 	var err error
+
+	dir, err := os.Getwd()
+	if err != nil {
+		fmt.Println("Error:", err)
+		return
+	}
+	fmt.Println("Current working directory:", dir)
+
+	// Initialize finance database
 	db, err = sql.Open("sqlite3", financeDBPath)
 	if err != nil {
 		log.Fatal(err)
